@@ -1,26 +1,132 @@
 @import "tailwindcss";
 
+@theme {
+  /* Backgrounds */
+  --color-bg-base: var(--bg-base);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-card: var(--bg-card);
+  --color-bg-glass: var(--bg-glass);
+  --color-bg-glass-hover: var(--bg-glass-hover);
+  --color-bg-code: var(--bg-code);
+  --color-bg-input: var(--bg-input);
+  --color-bg-popular: var(--bg-popular);
+
+  /* Text */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-code: var(--text-code);
+  --color-text-on-brand: var(--text-on-brand);
+
+  /* Brand */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-glow: var(--brand-glow);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-secondary-glow: var(--brand-secondary-glow);
+
+  /* Accent */
+  --color-accent: var(--accent);
+  --color-accent-glow: var(--accent-glow);
+
+  /* Semantic */
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+
+  /* Borders */
+  --color-border-default: var(--border-default);
+  --color-border-glass: var(--border-glass);
+  --color-border-card: var(--border-card);
+  --color-border-code: var(--border-code);
+  --color-border-input: var(--border-input);
+  --color-border-popular: var(--border-popular);
+
+  /* Gradients */
+  --color-grad-start: var(--grad-start);
+  --color-grad-mid: var(--grad-mid);
+  --color-grad-end: var(--grad-end);
+  --color-grad-hero-start: var(--grad-hero-start);
+  --color-grad-hero-end: var(--grad-hero-end);
+  --color-grad-radial: var(--grad-radial);
+
+  /* Shadows */
+  --color-shadow-brand: var(--shadow-brand);
+  --color-shadow-popular: var(--shadow-popular);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds */
+  --bg-base: #0a0a0f;
+  --bg-elevated: #111118;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-glass: rgba(255, 255, 255, 0.05);
+  --bg-glass-hover: rgba(255, 255, 255, 0.08);
+  --bg-code: #0d0d12;
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-popular: rgba(99, 102, 241, 0.08);
+
+  /* Text */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-code: #a5b4fc;
+  --text-on-brand: #ffffff;
+
+  /* Brand */
+  --brand: #6366f1;
+  --brand-hover: #4f46e5;
+  --brand-glow: rgba(99, 102, 241, 0.35);
+  --brand-secondary: #8b5cf6;
+  --brand-secondary-glow: rgba(139, 92, 246, 0.35);
+
+  /* Accent */
+  --accent: #06b6d4;
+  --accent-glow: rgba(6, 182, 212, 0.35);
+
+  /* Semantic */
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #f59e0b;
+
+  /* Borders */
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-card: rgba(255, 255, 255, 0.08);
+  --border-code: rgba(255, 255, 255, 0.1);
+  --border-input: rgba(255, 255, 255, 0.12);
+  --border-popular: rgba(99, 102, 241, 0.3);
+
+  /* Gradients */
+  --grad-start: #6366f1;
+  --grad-mid: #8b5cf6;
+  --grad-end: #06b6d4;
+  --grad-hero-start: rgba(99, 102, 241, 0.2);
+  --grad-hero-end: rgba(139, 92, 246, 0.05);
+  --grad-radial: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15), transparent 60%);
+
+  /* Shadows */
+  --shadow-brand: 0 0 40px -10px rgba(99, 102, 241, 0.4);
+  --shadow-popular: 0 0 60px -15px rgba(99, 102, 241, 0.3);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-glass);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Selection */
+::selection {
+  background: var(--brand-glow);
+  color: var(--text-primary);
 }
