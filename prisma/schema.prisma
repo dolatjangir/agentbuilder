@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// User — App users (admins & regular users)
+// ============================================================
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String // hashed with bcrypt
+  role          String    @default("user") // admin | user
+  avatarUrl     String?   @map("avatar_url")
+  emailVerified DateTime? @map("email_verified")
+
+  // Relations
+  chatbots Chatbot[]
+  projects Project[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// ============================================================
+// Project — A user's workspace (holds chatbots, RAG, agents)
+// ============================================================
+model Project {
+  id          String  @id @default(cuid())
+  name        String
+  description String? @db.Text
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relations
+  chatbots Chatbot[]
+  ragDocs  RagDocument[]
+  agents   Agent[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Chatbot {
+  id    String @id @default(cuid())
+  botId String @unique @map("bot_id") // Public-facing bot ID
+
+  // Ownership
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Bot Identity
+  botName   String  @map("bot_name")
+  botDesc   String? @map("bot_desc") @db.Text
+  avatarUrl String? @map("avatar_url")
+
+  // AI Provider Settings
+  provider  String // gemini | openai | claude | openrouter
+  model     String
+  apiKey    String @map("api_key") // ENCRYPTED — never returned to client
+  apiKeyIv  String @map("api_key_iv") // IV for decryption
+  apiKeyTag String @map("api_key_tag") // Auth tag for AES-GCM
+
+  // Behavior
+  systemPrompt  String @map("system_prompt") @db.Text
+  responseStyle String @default("balanced") @map("response_style") // precise | balanced | creative
+  temperature   Float  @default(0.7)
+  welcomeMsg    String @default("Hello 👋\n\nHow can I help you today?") @map("welcome_msg") @db.Text
+
+  // Widget Settings
+  primaryColor String @default("#6366f1") @map("primary_color")
+  widgetPos    String @default("bottom-right") @map("widget_pos")
+  widgetTitle  String @default("Support Assistant") @map("widget_title")
+
+  // Metadata
+  status        String @default("active") // active | paused | archived
+  totalChats    Int    @default(0) @map("total_chats")
+  totalMessages Int    @default(0) @map("total_messages")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  questions SuggestedQuestion[]
+  sessions  ChatSession[]
+  messages  ChatMessage[]
+
+  ragDocument   RagDocument? @relation(fields: [ragDocumentId], references: [id])
+  ragDocumentId String?      @map("rag_document_id")
+
+  @@index([botId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([projectId])
+  @@map("chatbots")
+}
+
+// ============================================================
+// RAG Document — Knowledge base for chatbots
+// ============================================================
+model RagDocument {
+  id       String @id @default(cuid())
+  name     String
+  content  String @db.LongText
+  fileType String @default("text") @map("file_type") // pdf | txt | md | url
+
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Can be linked to multiple chatbots
+  chatbots Chatbot[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("rag_documents")
+}
+
+// ============================================================
+// Agent — AI agents (follow-up, data mining, etc.)
+// ============================================================
+model Agent {
+  id          String  @id @default(cuid())
+  name        String
+  type        String // followup | content | calling | campaign | datamining
+  description String? @db.Text
+  config      Json // agent-specific settings
+
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([projectId])
+  @@index([type])
+  @@map("agents")
+}
+
+// ============================================================
+// Suggested Questions — Starter questions for the bot
+// ============================================================
+model SuggestedQuestion {
+  id       String @id @default(cuid())
+  question String @db.VarChar(500)
+  order    Int    @default(0)
+
+  chatbotId String  @map("chatbot_id")
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([chatbotId])
+  @@map("suggested_questions")
+}
+
+// ============================================================
+// Chat Session — A conversation thread
+// ============================================================
+model ChatSession {
+  id        String @id @default(cuid())
+  sessionId String @unique @map("session_id") // Client-side session identifier
+
+  chatbotId String  @map("chatbot_id")
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent") @db.Text
+
+  messageCount Int @default(0) @map("message_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages ChatMessage[]
+
+  @@index([chatbotId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_sessions")
+}
+
+// ============================================================
+// Chat Message — Individual messages in a conversation
+// ============================================================
+model ChatMessage {
+  id String @id @default(cuid())
+
+  role    String // user | assistant
+  content String @db.LongText
+
+  chatbotId String  @map("chatbot_id")
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  sessionId String?      @map("session_id")
+  session   ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Provider metadata (for debugging/auditing)
+  providerUsed String? @map("provider_used")
+  modelUsed    String? @map("model_used")
+  tokensUsed   Int?    @map("tokens_used")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([chatbotId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}

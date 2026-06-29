@@ -53,11 +53,17 @@ const providers: { id: Provider; label: string; color: string; glow: string }[] 
   { id: "openrouter", label: "OpenRouter", color: "text-warning", glow: "shadow-[0_0_20px_-5px_rgba(245,158,11,0.35)]" },
 ];
 
-const models: Record<Provider, { id: string; label: string; speed: "fast" | "balanced" | "powerful" }[]> = {
+const models: Record<Provider, { id: string; label: string; speed: "fast" | "balanced" | "powerful" | "rapidGenerationModel" | "reasoningEngine" | "HighlyEfficient" | "complexMathematical" | "minimalLatency"}[]> = {
   gemini: [
+     { id: "gemini-3.5-flash", label: "Gemini 2.5 Flash", speed: "rapidGenerationModel" },
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", speed: "fast" },
+      { id: "gemini-3.1-pro", label: "Gemini 3.1 Pro", speed: "reasoningEngine" },
     { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", speed: "powerful" },
     { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro", speed: "balanced" },
+     { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash lite", speed: "minimalLatency" },
+     { id: "gemini-3-deep-think", label: "Gemini 3 deep think", speed: "complexMathematical" },
+     
+      {id: "gemini-3.1-flash-lite",label: "gemini 3.1 flash lite", speed:"HighlyEfficient"}
   ],
   openai: [
     { id: "gpt-5", label: "GPT-5", speed: "powerful" },
@@ -86,6 +92,11 @@ const speedBadge = {
   fast: { icon: <Zap className="w-3 h-3" />, label: "Fast", color: "text-success bg-success/10 border-success/20" },
   balanced: { icon: <Scale className="w-3 h-3" />, label: "Balanced", color: "text-accent bg-accent/10 border-accent/20" },
   powerful: { icon: <Brain className="w-3 h-3" />, label: "Powerful", color: "text-brand-secondary bg-brand-secondary/10 border-brand-secondary/20" },
+  minimalLatency: { icon: <Zap className="w-3 h-3" />, label: "minimal latency",  color: "text-success bg-success/10 border-success/20"},
+    complexMathematical: { icon: <Scale className="w-3 h-3" />, label: "complex Mathematical", color: "text-accent bg-accent/10 border-accent/20" },
+      HighlyEfficient: { icon: <Brain className="w-3 h-3" />, label: "Highly Efficient", color: "text-brand-secondary bg-brand-secondary/10 border-brand-secondary/20" },
+        reasoningEngine: { icon: <Zap className="w-3 h-3" />, label: "reasoning Engine", color: "text-success bg-success/10 border-success/20" },
+          rapidGenerationModel: { icon: <Scale className="w-3 h-3" />, label: "rapid Generation Model",color: "text-accent bg-accent/10 border-accent/20"}, 
 };
 
 const positions = [
@@ -175,6 +186,8 @@ export default function ChatbotBuilderPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { id: "1", role: "assistant", content: "Hello 👋\n\nHow can I help you today?" },
   ]);
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+  const [botid,setBotid] = useState<string | undefined>(undefined);
   const [previewInput, setPreviewInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
@@ -216,35 +229,104 @@ export default function ChatbotBuilderPage() {
     }
   };
 
-  const handleCreate = async () => {
-    setIsCreating(true);
-    await new Promise((r) => setTimeout(r, 2500));
-    setIsCreating(false);
+const handleCreate = async () => {
+  setIsCreating(true);
+  
+  const payload = {
+    botName,
+    botDesc,
+    provider,
+    model,
+    apiKey,           // ← sent once, encrypted on server
+    systemPrompt,
+    responseStyle,
+    welcomeMsg,
+    questions,
+    primaryColor,
+    widgetPos,
+    widgetTitle,
+    avatarUrl,
+  };
+
+  const res = await fetch("/api/chatbots", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    const newBotId = data.data.botId;
+
     setIsCreated(true);
+     setBotid(newBotId); // ← SAVE THIS! It's "bot_0fy2fpb6y"
+    console.log("Bot created with ID:", newBotId);
+  }
+  console.log("Full API response:", data);
+console.log("data.data:", data.data);
+console.log("data.data.botId:", data.data?.botId);
+  
+  setIsCreating(false);
+};
+const handlePreviewSend = async () => {
+   if (!previewInput.trim()) return;
+  if (!botid) {
+    // Show error or alert — bot hasn't been created yet
+    alert("Please create the chatbot first before testing.");
+    return;
+  }
+  
+  // Fix #1: Explicitly type the role as literal "user"
+  const userMsg: ChatMessage = { 
+    id: Date.now().toString(), 
+    role: "user" as const, 
+    content: previewInput 
   };
+  
+  setChatMessages(prev => [...prev, userMsg]);
+  setPreviewInput("");
+  setIsTyping(true);
 
-  const handlePreviewSend = () => {
-    if (!previewInput.trim()) return;
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: previewInput };
-    setChatMessages((prev) => [...prev, userMsg]);
-    setPreviewInput("");
-    setIsTyping(true);
+  // Fix #2 & #3: Add sessionId state
+  // Add this to your state declarations at the top:
 
-    setTimeout(() => {
-      setIsTyping(false);
-      const responses: Record<ResponseStyle, string> = {
-        precise: "Our Pro plan is $29/month with 50,000 messages. Enterprise starts at custom pricing. Would you like a detailed breakdown?",
-        balanced: "We offer three plans: Free ($0), Pro ($29/mo), and Enterprise (custom). The Pro plan includes 50K messages, API access, and custom branding. Which one interests you?",
-        creative: "Great question! 🚀 Our pricing is designed to scale with you. Start free, upgrade to Pro for $29 when you're ready to grow, or go Enterprise for unlimited power. Think of it as choosing your adventure — each path leads to AI greatness!",
-      };
-      const assistantMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: responses[responseStyle],
-      };
-      setChatMessages((prev) => [...prev, assistantMsg]);
-    }, 1500);
+
+  const res = await fetch(`/api/chat/${botid}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      message: previewInput,
+      sessionId: sessionId // uses the state variable
+    }),
+  });
+const data = await res.json();
+setIsTyping(false);
+
+if (data.success) {
+  const assistantMsg: ChatMessage = {
+    id: data.data.message.id,
+    role: "assistant" as const,
+    content: data.data.message.content
   };
+  setChatMessages(prev => [...prev, assistantMsg]);
+  setSessionId(data.data.sessionId);
+} else {
+  // ADD THIS
+  const cleanError = data.error
+    ?.replace(/Gemini API error: \d+ - /, "")
+    ?.replace(/\\n/g, "")
+    ?.replace(/[{}"]/g, "")
+    ?.replace(/error: /gi, "")
+    || "Service temporarily unavailable. Please try again.";
+    
+  const errorMsg: ChatMessage = {
+    id: Date.now().toString(),
+    role: "assistant" as const,
+    content: `⚠️ ${cleanError}`
+  };
+  setChatMessages(prev => [...prev, errorMsg]);
+}
+};
 
   const handleSuggestedClick = (q: string) => {
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: q };
@@ -262,9 +344,9 @@ export default function ChatbotBuilderPage() {
   };
 
   const botId = "bot_" + Math.random().toString(36).substr(2, 9);
-  const embedCode = `<script\n  src="https://yourdomain.com/widget.js?id=${botId}"\n  data-color="${primaryColor}"\n  data-position="${widgetPos}"\n></script>`;
+  const embedCode = `<script\n  src="https://localhost:3000/widget.js?id=${botId}"\n  data-color="${primaryColor}"\n  data-position="${widgetPos}"\n></script>`;
   const apiEndpoint = `POST /api/chat/${botId}`;
-  const publicUrl = `https://yourdomain.com/chat/${botId}`;
+  const publicUrl = `https://localhost:3000/chat/${botId}`;
 
   const currentStyle = responseStyles.find((s) => s.id === responseStyle)!;
   const currentModel = models[provider].find((m) => m.id === model)!;
@@ -408,7 +490,7 @@ export default function ChatbotBuilderPage() {
                     className="w-full px-4 py-3 pr-10 rounded-xl bg-bg-input border border-border-input text-text-primary text-sm appearance-none focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30 transition-all cursor-pointer"
                   >
                     {models[provider].map((m) => (
-                      <option key={m.id} value={m.id}>
+                      <option key={m.id} value={m.id} className="bg-black/70">
                         {m.label}
                       </option>
                     ))}
@@ -424,7 +506,7 @@ export default function ChatbotBuilderPage() {
               </GlassCard>
             </motion.div>
 
-            {/* 4. API Key */}
+            {/* 4. API Key  */}
             <motion.div variants={fadeInUp}>
               <GlassCard className="p-6">
                 <SectionTitle icon={<Terminal className="w-4 h-4" />} title="API Credentials" />
@@ -792,7 +874,7 @@ export default function ChatbotBuilderPage() {
                       />
                       <button
                         onClick={handlePreviewSend}
-                        disabled={!previewInput.trim() || isTyping}
+                        disabled={!previewInput.trim() || isTyping }
                         className="w-11 h-11 rounded-xl flex items-center justify-center transition-all disabled:opacity-40"
                         style={{ backgroundColor: primaryColor }}
                       >
