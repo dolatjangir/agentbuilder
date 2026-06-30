@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Widget Test</title>
+  <style>
+    body { padding: 40px; font-family: sans-serif; background: #f3f4f6; }
+    h1 { color: #111827; }
+    p { color: #6b7280; }
+    #debug { margin-top: 20px; padding: 15px; background: #1f2937; color: #10b981; font-family: monospace; font-size: 12px; border-radius: 8px; white-space: pre-wrap; }
+    #debug.error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>My Customer Website</h1>
+  <p>If the widget works, you will see a chat bubble in the bottom-right corner.</p>
+
+  <div id="debug">Loading widget...</div>
+
+  <script>
+    const debug = document.getElementById('debug');
+    function log(msg, isError) {
+      debug.textContent += '\n' + msg;
+      if (isError) debug.classList.add('error');
+      console.log(msg);
+    }
+
+    const script = document.createElement('script');
+    script.src = 'http://localhost:3000/widget.js?id=bot_dd6mei4kf';
+    script.setAttribute('data-color', '#ef4444');
+    script.setAttribute('data-position', 'bottom-right');
+
+    script.onload = function() {
+      log('Script loaded!');
+      setTimeout(function() {
+        const widget = document.getElementById('chat-widget-bot_dd6mei4kf');
+        if (widget) {
+          log('Widget DOM found');
+          const btn = document.getElementById('chat-toggle-bot_dd6mei4kf');
+          const win = document.getElementById('chat-window-bot_dd6mei4kf');
+          log('Button visible: ' + (btn && btn.offsetWidth > 0));
+          log('Button color: ' + (btn ? btn.style.backgroundColor : 'none'));
+          log('Window hidden: ' + (win ? win.style.display : 'none'));
+        } else {
+          log('Widget DOM NOT found', true);
+        }
+      }, 500);
+    };
+
+    script.onerror = function() {
+      log('Script FAILED to load', true);
+    };
+
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>

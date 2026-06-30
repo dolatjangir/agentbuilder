@@ -2,7 +2,7 @@
 
 import { motion , Variants } from "framer-motion"
 import { Terminal, Link2, Globe, ExternalLink, Check } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -41,6 +41,15 @@ const staggerContainer = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08 } },
 }
+interface Chatbot {
+  botId: string
+  botName: string
+  primaryColor: string
+  widgetPos: string
+  status: string
+  welcomeMsg: string
+  avatarUrl: string | null
+}
 
 interface IntegrationPanelProps {
   botId: string
@@ -49,9 +58,56 @@ interface IntegrationPanelProps {
 }
 
 export function IntegrationPanel({ botId, primaryColor, widgetPos }: IntegrationPanelProps) {
-  const embedCode = `<script\n  src="https://yourdomain.com/widget.js?id=${botId}"\n  data-color="${primaryColor}"\n  data-position="${widgetPos}"\n></script>`
-  const apiEndpoint = `POST /api/chat/${botId}`
-  const publicUrl = `https://yourdomain.com/chat/${botId}`
+  const [baseUrl, setBaseUrl] = useState("http://localhost:3000")
+  const [bot, setBot] = useState<Chatbot | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+   useEffect(() => {
+    // On client side, use current window location
+    if (typeof window !== "undefined") {
+      setBaseUrl(`${window.location.protocol}//${window.location.host}`)
+    }
+  }, [])
+
+   useEffect(() => {
+    async function fetchBot() {
+      try {
+        const res = await fetch(`/api/chatbots/${botId}`)
+        const json = await res.json()
+        if (!json.success) throw new Error(json.error)
+        setBot(json.data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchBot()
+  }, [botId])
+
+if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (error || !bot) {
+    return (
+      <div className="text-center py-12 text-red-500">
+        <p>{error || "Chatbot not found"}</p>
+      </div>
+    )
+  }
+
+ const embedCode = `<script
+  src="${baseUrl}/widget.js?id=${botId}"
+  data-color="${primaryColor}"
+  data-position="${widgetPos}"
+></script>`
+  const apiEndpoint = `POST ${baseUrl}/api/chat/${botId}`
+   const publicUrl = `${baseUrl}/chat/${botId}`
 
   return (
     <motion.div

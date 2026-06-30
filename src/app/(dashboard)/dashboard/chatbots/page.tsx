@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Bot, Plus, Settings, ExternalLink } from "lucide-react"
 import { auth } from "../../../../../auth"
+import { ChatbotCard } from "@/components/chatbots/chatbotCard"
+import { AnimatePresence } from "framer-motion"
 
 
 export default async function ChatbotsPage() {
@@ -47,46 +49,21 @@ export default async function ChatbotsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {chatbots.map((bot) => (
-            <div
-              key={bot.id}
-              className="p-6 rounded-2xl border border-border-card bg-bg-card hover:bg-bg-glass-hover transition-all"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-brand" />
-                </div>
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                  bot.status === "active"
-                    ? "bg-success/10 text-success border border-success/20"
-                    : "bg-warning/10 text-warning border border-warning/20"
-                }`}>
-                  {bot.status}
-                </span>
-              </div>
-              <h3 className="font-semibold text-text-primary">{bot.botName}</h3>
-              <p className="text-sm text-text-muted mt-1 line-clamp-2">{bot.botDesc}</p>
-              <div className="flex items-center gap-2 mt-3 text-xs text-text-muted">
-                <span>{bot.provider}</span>
-                <span>•</span>
-                <span>{bot.model}</span>
-              </div>
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-default">
-                <Link
-                  href={`/dashboard/chatbots/${bot.botId}`}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-bg-glass border border-border-glass text-sm text-text-secondary hover:text-text-primary hover:bg-bg-glass-hover transition-all"
-                >
-                  <Settings className="w-4 h-4" />
-                  Edit
-                </Link>
-                <Link
-                  href={`/dashboard/chatbots/${bot.botId}/preview`}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-brand/10 border border-brand/20 text-sm text-brand hover:bg-brand/20 transition-all"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Preview
-                </Link>
-              </div>
-            </div>
+            
+    <ChatbotCard
+      key={bot.id}
+      chatbot={{
+        botId: bot.botId,
+        botName: bot.botName,
+        botDesc: bot.botDesc,
+        primaryColor: bot.primaryColor,
+        status: bot.status as "active" | "inactive" | "draft",
+        totalChats: bot.totalChats,
+        totalMessages: bot.totalMessages,
+        createdAt: bot.createdAt,
+      }}
+    />
+    
           ))}
         </div>
       )}

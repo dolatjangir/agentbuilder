@@ -4,6 +4,15 @@ import { callProvider, getTemperature } from "@/lib/providers";
 import { chatMessageSchema } from "@/lib/validators";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+}
+
+
 /** POST /api/chat/:botId — Public chat endpoint (for widget/embed) */
 export async function POST(
   req: NextRequest,
@@ -21,6 +30,7 @@ export async function POST(
         {
           status: 429,
           headers: {
+              ...corsHeaders,
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": String(rateLimit.resetTime),
           },
@@ -34,7 +44,7 @@ export async function POST(
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: "Invalid message format" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders  }
       );
     }
 
@@ -49,14 +59,14 @@ export async function POST(
     if (!chatbot) {
       return NextResponse.json(
         { success: false, error: "Chatbot not found" },
-        { status: 404 }
+        { status: 404, headers: corsHeaders  }
       );
     }
 
     if (chatbot.status !== "active") {
       return NextResponse.json(
         { success: false, error: "This chatbot is currently unavailable" },
-        { status: 403 }
+        { status: 403 , headers: corsHeaders }
       );
     }
 
@@ -139,6 +149,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: {
+          reply: response.content,
         message: {
           id: assistantMessage.id,
           role: "assistant",
@@ -154,7 +165,7 @@ export async function POST(
         success: false,
         error: error instanceof Error ? error.message : "Failed to process message",
       },
-      { status: 500 }
+      { status: 500 , headers: corsHeaders }
     );
   }
 }
@@ -163,10 +174,6 @@ export async function POST(
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
+   headers: corsHeaders,
   });
 }
